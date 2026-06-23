@@ -1,0 +1,8 @@
+{
+  "name": "chitieu-hangngay",
+  "version": "1.0.0",
+  "description": "Ứng dụng Chi Tiêu Hàng Ngày với Neon PostgreSQL",
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4"
+  }
+}

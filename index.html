@@ -1,0 +1,96 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chi Tiêu Hàng Ngày</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <div class="logo">Chi<span>tiêu</span></div>
+        <div class="month-selector">
+            <button id="prev-month"><i class="fa fa-chevron-left" style="font-size:11px"></i></button>
+            <span id="month-label"></span>
+            <button id="next-month"><i class="fa fa-chevron-right" style="font-size:11px"></i></button>
+        </div>
+    </header>
+
+    <div class="container">
+
+        <!-- Summary -->
+        <div class="summary-grid">
+            <div class="sum-card accent">
+                <div class="sum-label">Tổng tháng này</div>
+                <div class="sum-value" id="sum-total">0 ₫</div>
+                <div class="sum-sub" id="sum-count">0 khoản chi</div>
+            </div>
+            <div class="sum-card">
+                <div class="sum-label">Hôm nay</div>
+                <div class="sum-value" id="sum-today">0 ₫</div>
+                <div class="sum-sub">chi tiêu trong ngày</div>
+            </div>
+            <div class="sum-card">
+                <div class="sum-label">Trung bình/ngày</div>
+                <div class="sum-value" id="sum-avg">0 ₫</div>
+                <div class="sum-sub" id="sum-days-label">tháng này</div>
+            </div>
+        </div>
+
+        <!-- Add form -->
+        <div class="add-form">
+            <div class="form-title">+ Thêm khoản chi</div>
+            <div class="form-row">
+                <div class="field">
+                    <label>Mô tả</label>
+                    <input type="text" id="inp-note" placeholder="Ví dụ: Cà phê sáng">
+                </div>
+                <div class="field">
+                    <label>Số tiền (₫)</label>
+                    <input type="number" id="inp-amount" placeholder="50000" min="0">
+                </div>
+                <div class="field">
+                    <label>Danh mục</label>
+                    <select id="inp-cat">
+                        <option value="Ăn uống">🍜 Ăn uống</option>
+                        <option value="Mua sắm">🛍 Mua sắm</option>
+                        <option value="Di chuyển">🚌 Di chuyển</option>
+                        <option value="Giải trí">🎬 Giải trí</option>
+                        <option value="Sức khỏe">💊 Sức khỏe</option>
+                        <option value="Học tập">📚 Học tập</option>
+                        <option value="Hoá đơn">⚡ Hoá đơn</option>
+                        <option value="Khác">📦 Khác</option>
+                    </select>
+                </div>
+                <button class="btn-add" onclick="addExpense()">Thêm</button>
+            </div>
+        </div>
+
+        <!-- Filter pills -->
+        <div class="filter-row" id="filter-row">
+            <div class="pill active" data-cat="all" onclick="setFilter('all')">
+                <span>Tất cả</span>
+            </div>
+        </div>
+
+        <!-- Category chart -->
+        <div class="chart-section">
+            <div class="section-title">Theo danh mục</div>
+            <div class="cat-bars" id="cat-bars">
+                <div class="empty-state">Chưa có dữ liệu</div>
+            </div>
+        </div>
+
+        <!-- Expense list -->
+        <div id="expense-list"></div>
+
+    </div>
+
+    <script src="Script.js"></script>
+</body>
+</html>
+
