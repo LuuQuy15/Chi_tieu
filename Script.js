@@ -17,20 +17,40 @@ let viewDate = new Date();
 async function loadData() {
     const y = viewDate.getFullYear();
     const m = viewDate.getMonth(); // 0-11
-    const res = await fetch(`/api/expenses?year=${y}&month=${m}`);
-    return await res.json();
+    try {
+        const res = await fetch(`/api/expenses?year=${y}&month=${m}`);
+        if (!res.ok) {
+            console.error('Lỗi tải dữ liệu:', res.status, await res.text());
+            return [];
+        }
+        const data = await res.json();
+        // Đảm bảo luôn trả về mảng, tránh crash nếu server trả về object lỗi
+        return Array.isArray(data) ? data : [];
+    } catch (err) {
+        console.error('Lỗi kết nối server:', err);
+        return [];
+    }
 }
 
 async function addToServer(expense) {
-    await fetch('/api/expenses', {
+    const res = await fetch('/api/expenses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(expense)
     });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Lỗi không xác định' }));
+        throw new Error(err.error || 'Lỗi server khi lưu dữ liệu');
+    }
+    return await res.json();
 }
 
 async function deleteFromServer(id) {
-    await fetch(`/api/expenses/${id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/expenses/${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Lỗi không xác định' }));
+        throw new Error(err.error || 'Lỗi server khi xóa');
+    }
 }
 
 // ─── Tiện ích ────────────────────────────────────────────
@@ -63,15 +83,26 @@ async function addExpense() {
         year: viewDate.getFullYear(),
         month: viewDate.getMonth()
     };
-    await addToServer(expense);
-    document.getElementById('inp-note').value = '';
-    document.getElementById('inp-amount').value = '';
-    await render();
+    try {
+        await addToServer(expense);
+        // Chỉ xóa ô nhập sau khi lưu thành công
+        document.getElementById('inp-note').value = '';
+        document.getElementById('inp-amount').value = '';
+        await render();
+    } catch (err) {
+        console.error('Lỗi thêm khoản chi:', err);
+        alert('❌ Không thể lưu: ' + err.message + '\n\nKiểm tra kết nối mạng hoặc cấu hình DATABASE_URL.');
+    }
 }
 
 async function deleteExpense(id) {
-    await deleteFromServer(id);
-    await render();
+    try {
+        await deleteFromServer(id);
+        await render();
+    } catch (err) {
+        console.error('Lỗi xóa:', err);
+        alert('❌ Không thể xóa: ' + err.message);
+    }
 }
 
 // ─── Lọc theo danh mục ──────────────────────────────────
