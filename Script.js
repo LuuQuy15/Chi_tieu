@@ -1,3 +1,38 @@
+// ─── Xác thực: kiểm tra token khi mở app ────────────────
+const TOKEN = localStorage.getItem('ct_token');
+const USERNAME = localStorage.getItem('ct_username');
+
+if (!TOKEN) {
+    window.location.href = '/login.html';
+}
+
+// Hiện tên người dùng trên header (sẽ gắn sau khi DOM load)
+document.addEventListener('DOMContentLoaded', () => {
+    const userEl = document.getElementById('user-info');
+    if (userEl && USERNAME) userEl.textContent = USERNAME;
+});
+
+// ─── Hàm fetch có kèm Authorization ─────────────────────
+function authFetch(url, options = {}) {
+    return fetch(url, {
+        ...options,
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + TOKEN,
+            ...(options.headers || {})
+        }
+    });
+}
+
+// ─── Đăng xuất ───────────────────────────────────────────
+function logout() {
+    if (!confirm('Bạn muốn đăng xuất không?')) return;
+    localStorage.removeItem('ct_token');
+    localStorage.removeItem('ct_username');
+    window.location.href = '/login.html';
+}
+
+// ─── Danh sách danh mục ──────────────────────────────────
 const CATS = {
     'Ăn uống': { icon: '🍜', color: '#F59E0B', bg: '#FFF8E1' },
     'Mua sắm': { icon: '🛍', color: '#EC4899', bg: '#FDF2F8' },
@@ -12,19 +47,25 @@ const CATS = {
 let currentFilter = 'all';
 let viewDate = new Date();
 
-// ─── Giao tiếp với server (thay thế localStorage) ───────
+// ─── Giao tiếp với server ────────────────────────────────
 
 async function loadData() {
     const y = viewDate.getFullYear();
-    const m = viewDate.getMonth(); // 0-11
+    const m = viewDate.getMonth();
     try {
-        const res = await fetch(`/api/expenses?year=${y}&month=${m}`);
+        const res = await authFetch(`/api/expenses?year=${y}&month=${m}`);
+        if (res.status === 401) {
+            // Token hết hạn → đăng xuất
+            localStorage.removeItem('ct_token');
+            localStorage.removeItem('ct_username');
+            window.location.href = '/login.html';
+            return [];
+        }
         if (!res.ok) {
             console.error('Lỗi tải dữ liệu:', res.status, await res.text());
             return [];
         }
         const data = await res.json();
-        // Đảm bảo luôn trả về mảng, tránh crash nếu server trả về object lỗi
         return Array.isArray(data) ? data : [];
     } catch (err) {
         console.error('Lỗi kết nối server:', err);
@@ -33,9 +74,8 @@ async function loadData() {
 }
 
 async function addToServer(expense) {
-    const res = await fetch('/api/expenses', {
+    const res = await authFetch('/api/expenses', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(expense)
     });
     if (!res.ok) {
@@ -46,7 +86,7 @@ async function addToServer(expense) {
 }
 
 async function deleteFromServer(id) {
-    const res = await fetch(`/api/expenses?id=${id}`, { method: 'DELETE' });
+    const res = await authFetch(`/api/expenses?id=${id}`, { method: 'DELETE' });
     if (!res.ok) {
         const err = await res.json().catch(() => ({ error: 'Lỗi không xác định' }));
         throw new Error(err.error || 'Lỗi server khi xóa');
@@ -85,13 +125,12 @@ async function addExpense() {
     };
     try {
         await addToServer(expense);
-        // Chỉ xóa ô nhập sau khi lưu thành công
         document.getElementById('inp-note').value = '';
         document.getElementById('inp-amount').value = '';
         await render();
     } catch (err) {
         console.error('Lỗi thêm khoản chi:', err);
-        alert('❌ Không thể lưu: ' + err.message + '\n\nKiểm tra kết nối mạng hoặc cấu hình DATABASE_URL.');
+        alert('❌ Không thể lưu: ' + err.message);
     }
 }
 
@@ -112,7 +151,6 @@ function setFilter(cat) {
     document.querySelectorAll('.pill').forEach(p => {
         p.classList.toggle('active', p.dataset.cat === cat);
     });
-    // Chỉ vẽ lại danh sách, không cần tải lại dữ liệu
     renderList(window._cachedData || []);
 }
 
@@ -132,34 +170,30 @@ function updateMonthLabel() {
 async function render() {
     updateMonthLabel();
     const allData = await loadData();
-    window._cachedData = allData; // lưu tạm để setFilter dùng lại
+    window._cachedData = allData;
 
-    // Tổng kết
     const nowStr = today();
-    const total = allData.reduce((s, e) => s + e.amount, 0);
-    const todayTotal = allData.filter(e => e.date === nowStr).reduce((s, e) => s + e.amount, 0);
+    const total = allData.reduce((s, e) => s + Number(e.amount), 0);
+    const todayTotal = allData.filter(e => e.date === nowStr).reduce((s, e) => s + Number(e.amount), 0);
     const days = new Set(allData.map(e => e.date)).size || 1;
     document.getElementById('sum-total').textContent = fmt(total);
     document.getElementById('sum-count').textContent = allData.length + ' khoản chi';
     document.getElementById('sum-today').textContent = fmt(todayTotal);
     document.getElementById('sum-avg').textContent = fmt(Math.round(total / days));
 
-    // Tổng theo danh mục
     const catTotals = {};
-    allData.forEach(e => { catTotals[e.cat] = (catTotals[e.cat] || 0) + e.amount; });
+    allData.forEach(e => { catTotals[e.cat] = (catTotals[e.cat] || 0) + Number(e.amount); });
     const maxCat = Math.max(...Object.values(catTotals), 1);
 
-    // Bộ lọc dạng pill
     const filterRow = document.getElementById('filter-row');
     filterRow.innerHTML = `<div class="pill ${currentFilter === 'all' ? 'active' : ''}" data-cat="all" onclick="setFilter('all')"><span>Tất cả</span></div>`;
     Object.keys(catTotals).sort().forEach(cat => {
         const c = CATS[cat] || CATS['Khác'];
         filterRow.innerHTML += `<div class="pill ${currentFilter === cat ? 'active' : ''}" data-cat="${cat}" onclick="setFilter('${cat}')">
-      <span style="font-size:14px">${c.icon}</span><span>${cat}</span>
-    </div>`;
+            <span style="font-size:14px">${c.icon}</span><span>${cat}</span>
+        </div>`;
     });
 
-    // Biểu đồ cột theo danh mục
     const catBars = document.getElementById('cat-bars');
     if (Object.keys(catTotals).length === 0) {
         catBars.innerHTML = '<div class="empty-state">Chưa có dữ liệu trong tháng này</div>';
@@ -170,10 +204,10 @@ async function render() {
                 const c = CATS[cat] || CATS['Khác'];
                 const pct = Math.round(val / maxCat * 100);
                 return `<div class="cat-bar-row">
-          <div class="cat-bar-label"><span style="font-size:16px">${c.icon}</span>${cat}</div>
-          <div class="cat-bar-track"><div class="cat-bar-fill" style="width:${pct}%;background:${c.color}"></div></div>
-          <div class="cat-bar-val">${fmt(val)}</div>
-        </div>`;
+                    <div class="cat-bar-label"><span style="font-size:16px">${c.icon}</span>${cat}</div>
+                    <div class="cat-bar-track"><div class="cat-bar-fill" style="width:${pct}%;background:${c.color}"></div></div>
+                    <div class="cat-bar-val">${fmt(val)}</div>
+                </div>`;
             }).join('');
     }
 
@@ -203,30 +237,30 @@ function renderList(allData) {
         const dayLabel = isToday
             ? `Hôm nay — ${d}/${m}/${y}`
             : `${dayNames[dayObj.getDay()]}, ${d}/${m}/${y}`;
-        const dayTotal = byDate[date].reduce((s, e) => s + e.amount, 0);
+        const dayTotal = byDate[date].reduce((s, e) => s + Number(e.amount), 0);
 
         const rows = byDate[date]
             .sort((a, b) => b.id - a.id)
             .map(e => {
                 const c = CATS[e.cat] || CATS['Khác'];
                 return `<div class="expense-row">
-          <div class="cat-icon" style="background:${c.bg}">${c.icon}</div>
-          <div class="exp-info">
-            <div class="exp-note">${e.note}</div>
-            <div class="exp-cat">${e.cat}</div>
-          </div>
-          <div class="exp-amount">${fmt(e.amount)}</div>
-          <button class="btn-del" onclick="deleteExpense(${e.id})" title="Xoá"><i class="fa fa-trash-can"></i></button>
-        </div>`;
+                    <div class="cat-icon" style="background:${c.bg}">${c.icon}</div>
+                    <div class="exp-info">
+                        <div class="exp-note">${e.note}</div>
+                        <div class="exp-cat">${e.cat}</div>
+                    </div>
+                    <div class="exp-amount">${fmt(e.amount)}</div>
+                    <button class="btn-del" onclick="deleteExpense(${e.id})" title="Xoá"><i class="fa fa-trash-can"></i></button>
+                </div>`;
             }).join('');
 
         return `<div class="day-group">
-      <div class="day-header">
-        <span class="day-date">${dayLabel}</span>
-        <span class="day-total">${fmt(dayTotal)}</span>
-      </div>
-      ${rows}
-    </div>`;
+            <div class="day-header">
+                <span class="day-date">${dayLabel}</span>
+                <span class="day-total">${fmt(dayTotal)}</span>
+            </div>
+            ${rows}
+        </div>`;
     }).join('');
 }
 

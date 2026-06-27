@@ -1,0 +1,348 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập — ChiTiêu</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Be Vietnam Pro', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 24px;
+            padding: 40px 36px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+        }
+
+        .logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+            font-weight: 600;
+            color: #1a1a2e;
+            text-align: center;
+            margin-bottom: 6px;
+        }
+
+            .logo span {
+                color: #667eea;
+            }
+
+        .tagline {
+            text-align: center;
+            color: #9ca3af;
+            font-size: 13px;
+            margin-bottom: 32px;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            background: #f3f4f6;
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 28px;
+            gap: 4px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 9px;
+            cursor: pointer;
+            font-family: 'Be Vietnam Pro', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            background: transparent;
+            color: #6b7280;
+            transition: all 0.2s;
+        }
+
+            .tab.active {
+                background: #fff;
+                color: #1a1a2e;
+                box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+            }
+
+        /* Form */
+        .field {
+            margin-bottom: 18px;
+        }
+
+            .field label {
+                display: block;
+                font-size: 13px;
+                font-weight: 500;
+                color: #374151;
+                margin-bottom: 7px;
+            }
+
+        .input-wrap {
+            position: relative;
+        }
+
+            .input-wrap i {
+                position: absolute;
+                left: 14px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #9ca3af;
+                font-size: 14px;
+            }
+
+        .field input {
+            width: 100%;
+            padding: 12px 14px 12px 40px;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 10px;
+            font-family: 'Be Vietnam Pro', sans-serif;
+            font-size: 14px;
+            color: #1a1a2e;
+            outline: none;
+            transition: border-color 0.2s;
+            background: #fafafa;
+        }
+
+            .field input:focus {
+                border-color: #667eea;
+                background: #fff;
+            }
+
+        /* Toggle hiện mật khẩu */
+        .toggle-pw {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #9ca3af;
+            font-size: 14px;
+            padding: 4px;
+        }
+
+            .toggle-pw:hover {
+                color: #667eea;
+            }
+
+        /* Hint */
+        .hint {
+            font-size: 11.5px;
+            color: #9ca3af;
+            margin-top: 5px;
+        }
+
+        /* Nút submit */
+        .btn-submit {
+            width: 100%;
+            padding: 13px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Be Vietnam Pro', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 6px;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+
+            .btn-submit:hover {
+                opacity: 0.92;
+            }
+
+            .btn-submit:active {
+                transform: scale(0.98);
+            }
+
+            .btn-submit:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+            }
+
+        /* Thông báo lỗi / thành công */
+        .msg {
+            padding: 11px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            margin-bottom: 18px;
+            display: none;
+        }
+
+            .msg.error {
+                background: #fef2f2;
+                color: #dc2626;
+                border: 1px solid #fecaca;
+            }
+
+            .msg.success {
+                background: #f0fdf4;
+                color: #16a34a;
+                border: 1px solid #bbf7d0;
+            }
+
+            .msg.show {
+                display: block;
+            }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <div class="logo">Chi<span>tiêu</span></div>
+        <div class="tagline">Quản lý chi tiêu cá nhân hàng ngày</div>
+
+        <!-- Tabs đăng nhập / đăng ký -->
+        <div class="tabs">
+            <button class="tab active" id="tab-login" onclick="switchTab('login')">Đăng nhập</button>
+            <button class="tab" id="tab-register" onclick="switchTab('register')">Đăng ký</button>
+        </div>
+
+        <!-- Thông báo -->
+        <div class="msg" id="msg"></div>
+
+        <!-- Form -->
+        <div class="field">
+            <label>Tên đăng nhập</label>
+            <div class="input-wrap">
+                <i class="fa fa-user"></i>
+                <input type="text" id="inp-username" placeholder="Ví dụ: nguyen_van_a" autocomplete="username">
+            </div>
+            <div class="hint" id="hint-username"></div>
+        </div>
+
+        <div class="field">
+            <label>Mật khẩu</label>
+            <div class="input-wrap">
+                <i class="fa fa-lock"></i>
+                <input type="password" id="inp-password" placeholder="Ít nhất 6 ký tự" autocomplete="current-password">
+                <button class="toggle-pw" onclick="togglePw()" type="button" title="Hiện/ẩn mật khẩu">
+                    <i class="fa fa-eye" id="pw-eye"></i>
+                </button>
+            </div>
+        </div>
+
+        <button class="btn-submit" id="btn-submit" onclick="submit()">Đăng nhập</button>
+    </div>
+
+    <script>
+    let mode = 'login'; // 'login' | 'register'
+
+    // Nếu đã đăng nhập → vào thẳng trang chính
+    if (localStorage.getItem('ct_token')) {
+        window.location.href = '/';
+    }
+
+    function switchTab(tab) {
+        mode = tab;
+        document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+        document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+        document.getElementById('btn-submit').textContent = tab === 'login' ? 'Đăng nhập' : 'Tạo tài khoản';
+        document.getElementById('hint-username').textContent = tab === 'register'
+            ? 'Chỉ dùng chữ cái, số và dấu _ (3-30 ký tự)'
+            : '';
+        hideMsg();
+        // Đổi autocomplete
+        document.getElementById('inp-password').autocomplete = tab === 'login' ? 'current-password' : 'new-password';
+    }
+
+    function showMsg(text, type) {
+        const el = document.getElementById('msg');
+        el.textContent = text;
+        el.className = `msg ${type} show`;
+    }
+
+    function hideMsg() {
+        document.getElementById('msg').className = 'msg';
+    }
+
+    function togglePw() {
+        const inp = document.getElementById('inp-password');
+        const eye = document.getElementById('pw-eye');
+        if (inp.type === 'password') {
+            inp.type = 'text';
+            eye.className = 'fa fa-eye-slash';
+        } else {
+            inp.type = 'password';
+            eye.className = 'fa fa-eye';
+        }
+    }
+
+    async function submit() {
+        const username = document.getElementById('inp-username').value.trim();
+        const password = document.getElementById('inp-password').value;
+        const btn = document.getElementById('btn-submit');
+
+        if (!username || !password) {
+            showMsg('Vui lòng điền đầy đủ thông tin.', 'error');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Đang xử lý...';
+        hideMsg();
+
+        try {
+            const res = await fetch('/api/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: mode, username, password })
+            });
+            const data = await res.json();
+
+            if (!res.ok || !data.ok) {
+                showMsg(data.error || 'Có lỗi xảy ra, thử lại nhé.', 'error');
+                return;
+            }
+
+            // Lưu token & username
+            localStorage.setItem('ct_token', data.token);
+            localStorage.setItem('ct_username', data.username);
+
+            if (mode === 'register') {
+                showMsg('✅ Tạo tài khoản thành công! Đang vào...', 'success');
+            } else {
+                showMsg('✅ Đăng nhập thành công! Đang vào...', 'success');
+            }
+
+            setTimeout(() => { window.location.href = '/'; }, 800);
+
+        } catch (err) {
+            showMsg('❌ Lỗi kết nối: ' + err.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = mode === 'login' ? 'Đăng nhập' : 'Tạo tài khoản';
+        }
+    }
+
+    // Enter để submit
+    ['inp-username', 'inp-password'].forEach(id => {
+        document.getElementById(id).addEventListener('keydown', e => {
+            if (e.key === 'Enter') submit();
+        });
+    });
+    </script>
+
+</body>
+</html>
