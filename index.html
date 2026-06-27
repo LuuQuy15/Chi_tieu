@@ -51,7 +51,7 @@
                 </div>
                 <div class="field">
                     <label>Số tiền (₫)</label>
-                    <input type="number" id="inp-amount" placeholder="50000" min="0">
+                    <input type="text" id="inp-amount" placeholder="20,000" inputmode="numeric">
                 </div>
                 <div class="field">
                     <label>Danh mục</label>
@@ -65,6 +65,10 @@
                         <option value="Hoá đơn">⚡ Hoá đơn</option>
                         <option value="Khác">📦 Khác</option>
                     </select>
+                </div>
+                <div class="field">
+                    <label>Người nhập</label>
+                    <input type="text" id="inp-person" placeholder="Tên bạn">
                 </div>
                 <button class="btn-add" onclick="addExpense()">Thêm</button>
             </div>
@@ -93,4 +97,3 @@
     <script src="Script.js"></script>
 </body>
 </html>
-

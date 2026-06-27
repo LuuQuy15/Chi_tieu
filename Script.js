@@ -6,10 +6,51 @@ if (!TOKEN) {
     window.location.href = '/login.html';
 }
 
-// Hiện tên người dùng trên header (sẽ gắn sau khi DOM load)
+// ─── Auto-format số tiền (nhập 20 → hiển thị 20,000) ────
+function parseAmount(raw) {
+    // Xoá mọi dấu phẩy, chấm ngăn cách → lấy số thuần
+    const clean = raw.replace(/[,. ]/g, '').trim();
+    if (!clean || isNaN(Number(clean))) return NaN;
+    const num = Number(clean);
+    // Nếu người dùng nhập số nhỏ (≤ 999) → nhân 1000 (quy ước đơn vị nghìn đồng)
+    return num <= 999 ? num * 1000 : num;
+}
+
+function formatAmountInput(input) {
+    const raw = input.value.replace(/[^0-9]/g, '');
+    if (!raw) { input.value = ''; return; }
+    // Hiển thị có dấu phẩy ngăn cách hàng nghìn
+    input.value = Number(raw).toLocaleString('vi-VN');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const userEl = document.getElementById('user-info');
     if (userEl && USERNAME) userEl.textContent = USERNAME;
+
+    // Gắn auto-format cho ô nhập tiền
+    const amtInput = document.getElementById('inp-amount');
+    if (amtInput) {
+        amtInput.addEventListener('input', () => formatAmountInput(amtInput));
+        amtInput.addEventListener('blur', () => {
+            const raw = amtInput.value.replace(/[^0-9]/g, '');
+            if (!raw) return;
+            const num = Number(raw);
+            // Nếu ≤ 999 thì nhân 1000 và format lại
+            const final = num <= 999 ? num * 1000 : num;
+            amtInput.value = final.toLocaleString('vi-VN');
+            amtInput.dataset.actualValue = final;
+        });
+    }
+
+    // Lưu tên người nhập vào localStorage để nhớ lần sau
+    const personInput = document.getElementById('inp-person');
+    if (personInput) {
+        const savedPerson = localStorage.getItem('ct_person') || '';
+        personInput.value = savedPerson;
+        personInput.addEventListener('change', () => {
+            localStorage.setItem('ct_person', personInput.value.trim());
+        });
+    }
 });
 
 // ─── Hàm fetch có kèm Authorization ─────────────────────
@@ -108,12 +149,19 @@ function today() {
 
 async function addExpense() {
     const note = document.getElementById('inp-note').value.trim();
-    const amount = parseFloat(document.getElementById('inp-amount').value);
+    const amtInput = document.getElementById('inp-amount');
+    const rawAmt = amtInput.value.replace(/[^0-9]/g, '');
+    const amount = rawAmt ? Number(rawAmt) : NaN;
     const cat = document.getElementById('inp-cat').value;
+    const person = document.getElementById('inp-person').value.trim();
+
     if (!note || !amount || amount <= 0) {
         alert('Vui lòng điền đủ mô tả và số tiền.');
         return;
     }
+    // Lưu tên người nhập để nhớ lần sau
+    if (person) localStorage.setItem('ct_person', person);
+
     const expense = {
         id: Date.now(),
         note,
@@ -121,12 +169,14 @@ async function addExpense() {
         cat,
         date: today(),
         year: viewDate.getFullYear(),
-        month: viewDate.getMonth()
+        month: viewDate.getMonth(),
+        person
     };
     try {
         await addToServer(expense);
         document.getElementById('inp-note').value = '';
-        document.getElementById('inp-amount').value = '';
+        amtInput.value = '';
+        delete amtInput.dataset.actualValue;
         await render();
     } catch (err) {
         console.error('Lỗi thêm khoản chi:', err);
@@ -175,11 +225,26 @@ async function render() {
     const nowStr = today();
     const total = allData.reduce((s, e) => s + Number(e.amount), 0);
     const todayTotal = allData.filter(e => e.date === nowStr).reduce((s, e) => s + Number(e.amount), 0);
-    const days = new Set(allData.map(e => e.date)).size || 1;
+
+    // Tính số ngày đã qua trong tháng đang xem (không phải số ngày có chi tiêu)
+    const now = new Date();
+    const isCurrentMonth = viewDate.getFullYear() === now.getFullYear() && viewDate.getMonth() === now.getMonth();
+    let daysElapsed;
+    if (isCurrentMonth) {
+        daysElapsed = now.getDate(); // ngày hiện tại trong tháng
+    } else if (viewDate < now) {
+        // Tháng đã qua → lấy tổng số ngày trong tháng đó
+        daysElapsed = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0).getDate();
+    } else {
+        daysElapsed = 1; // tháng tương lai → tránh chia 0
+    }
+
     document.getElementById('sum-total').textContent = fmt(total);
     document.getElementById('sum-count').textContent = allData.length + ' khoản chi';
     document.getElementById('sum-today').textContent = fmt(todayTotal);
-    document.getElementById('sum-avg').textContent = fmt(Math.round(total / days));
+    document.getElementById('sum-avg').textContent = fmt(Math.round(total / daysElapsed));
+    const daysLabel = document.getElementById('sum-days-label');
+    if (daysLabel) daysLabel.textContent = isCurrentMonth ? `${daysElapsed} ngày qua` : 'trung bình/ngày';
 
     const catTotals = {};
     allData.forEach(e => { catTotals[e.cat] = (catTotals[e.cat] || 0) + Number(e.amount); });
@@ -243,10 +308,13 @@ function renderList(allData) {
             .sort((a, b) => b.id - a.id)
             .map(e => {
                 const c = CATS[e.cat] || CATS['Khác'];
+                const personTag = e.person
+                    ? `<span class="exp-person">${e.person}</span>`
+                    : '';
                 return `<div class="expense-row">
                     <div class="cat-icon" style="background:${c.bg}">${c.icon}</div>
                     <div class="exp-info">
-                        <div class="exp-note">${e.note}</div>
+                        <div class="exp-note">${e.note} ${personTag}</div>
                         <div class="exp-cat">${e.cat}</div>
                     </div>
                     <div class="exp-amount">${fmt(e.amount)}</div>

@@ -1,6 +1,4 @@
-﻿
-
-*, *::before, *::after {
+﻿*, *::before, *::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
@@ -206,7 +204,7 @@ header {
 
 .form-row {
     display: grid;
-    grid-template-columns: 1fr 140px 160px auto;
+    grid-template-columns: 1fr 130px 150px 120px auto;
     gap: 10px;
     align-items: end;
 }
@@ -424,6 +422,18 @@ header {
     padding: 40px 20px;
     color: var(--text-3);
     font-size: 14px;
+}
+
+.exp-person {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: var(--accent-bg);
+    color: var(--accent-text);
+    margin-left: 6px;
+    vertical-align: middle;
 }
 
 @media (max-width: 640px) {

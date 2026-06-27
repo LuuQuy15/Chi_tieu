@@ -39,12 +39,16 @@ async function getDb() {
             cat       TEXT    NOT NULL,
             date      TEXT    NOT NULL,
             year      INTEGER NOT NULL,
-            month     INTEGER NOT NULL
+            month     INTEGER NOT NULL,
+            person    TEXT    NOT NULL DEFAULT ''
         )
     `;
-    // Thêm cột user_id nếu bảng cũ chưa có (migration an toàn)
+    // Migration an toàn cho bảng cũ
     try {
         await sql`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS user_id BIGINT NOT NULL DEFAULT 0`;
+    } catch (_) { /* bỏ qua nếu đã có */ }
+    try {
+        await sql`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS person TEXT NOT NULL DEFAULT ''`;
     } catch (_) { /* bỏ qua nếu đã có */ }
 
     return sql;
@@ -85,13 +89,13 @@ module.exports = async function handler(req, res) {
 
         // ── POST: Thêm khoản chi ──
         if (req.method === 'POST') {
-            const { id, note, amount, cat, date, year, month } = req.body;
+            const { id, note, amount, cat, date, year, month, person } = req.body;
             if (!note || !amount || !cat || !date || year === undefined || month === undefined) {
                 return res.status(400).json({ error: 'Thiếu dữ liệu' });
             }
             await sql`
-                INSERT INTO expenses (id, user_id, note, amount, cat, date, year, month)
-                VALUES (${id}, ${userId}, ${note}, ${Number(amount)}, ${cat}, ${date}, ${Number(year)}, ${Number(month)})
+                INSERT INTO expenses (id, user_id, note, amount, cat, date, year, month, person)
+                VALUES (${id}, ${userId}, ${note}, ${Number(amount)}, ${cat}, ${date}, ${Number(year)}, ${Number(month)}, ${person || ''})
             `;
             return res.status(200).json({ ok: true });
         }
