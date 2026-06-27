@@ -1,10 +1,6 @@
 {
   "rewrites": [
     {
-      "source": "/api/expenses/:id",
-      "destination": "/api/expenses"
-    },
-    {
       "source": "/api/expenses",
       "destination": "/api/expenses"
     }

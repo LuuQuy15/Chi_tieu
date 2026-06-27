@@ -46,7 +46,7 @@ async function addToServer(expense) {
 }
 
 async function deleteFromServer(id) {
-    const res = await fetch(`/api/expenses/${id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/expenses?id=${id}`, { method: 'DELETE' });
     if (!res.ok) {
         const err = await res.json().catch(() => ({ error: 'Lỗi không xác định' }));
         throw new Error(err.error || 'Lỗi server khi xóa');

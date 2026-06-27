@@ -50,8 +50,8 @@ module.exports = async function handler(req, res) {
         }
 
         if (req.method === 'DELETE') {
-            const urlParts = req.url.split('/');
-            const id = urlParts[urlParts.length - 1];
+            // Lấy id từ query string: DELETE /api/expenses?id=123
+            const id = req.query.id;
             if (!id || isNaN(Number(id))) return res.status(400).json({ error: 'ID không hợp lệ' });
             await sql`DELETE FROM expenses WHERE id = ${Number(id)}`;
             return res.status(200).json({ ok: true });
