@@ -226,17 +226,28 @@ async function render() {
     const total = allData.reduce((s, e) => s + Number(e.amount), 0);
     const todayTotal = allData.filter(e => e.date === nowStr).reduce((s, e) => s + Number(e.amount), 0);
 
-    // Tính số ngày đã qua trong tháng đang xem (không phải số ngày có chi tiêu)
+    // Tính số ngày để chia trung bình: bắt đầu từ NGÀY ĐẦU TIÊN có ghi nhận
+    // chi tiêu trong tháng đang xem (không phải mặc định từ ngày 1)
     const now = new Date();
     const isCurrentMonth = viewDate.getFullYear() === now.getFullYear() && viewDate.getMonth() === now.getMonth();
-    let daysElapsed;
-    if (isCurrentMonth) {
-        daysElapsed = now.getDate(); // ngày hiện tại trong tháng
-    } else if (viewDate < now) {
-        // Tháng đã qua → lấy tổng số ngày trong tháng đó
-        daysElapsed = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0).getDate();
-    } else {
-        daysElapsed = 1; // tháng tương lai → tránh chia 0
+    let daysElapsed = 1;
+    let startDay = null;
+
+    if (allData.length > 0) {
+        // Ngày dạng "YYYY-MM-DD" nên so sánh chuỗi là chính xác (không cần parse)
+        const earliestDate = allData.reduce((min, e) => (e.date < min ? e.date : min), allData[0].date);
+        startDay = Number(earliestDate.split('-')[2]); // ngày trong tháng (1-31)
+
+        if (isCurrentMonth) {
+            // Từ ngày bắt đầu nhập → đến hôm nay
+            daysElapsed = Math.max(1, now.getDate() - startDay + 1);
+        } else if (viewDate < now) {
+            // Tháng đã qua → từ ngày bắt đầu nhập đến ngày cuối tháng đó
+            const lastDayOfMonth = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0).getDate();
+            daysElapsed = Math.max(1, lastDayOfMonth - startDay + 1);
+        } else {
+            daysElapsed = 1; // tháng tương lai
+        }
     }
 
     document.getElementById('sum-total').textContent = fmt(total);
@@ -244,7 +255,11 @@ async function render() {
     document.getElementById('sum-today').textContent = fmt(todayTotal);
     document.getElementById('sum-avg').textContent = fmt(Math.round(total / daysElapsed));
     const daysLabel = document.getElementById('sum-days-label');
-    if (daysLabel) daysLabel.textContent = isCurrentMonth ? `${daysElapsed} ngày qua` : 'trung bình/ngày';
+    if (daysLabel) {
+        daysLabel.textContent = startDay
+            ? `từ ngày ${startDay} (${daysElapsed} ngày)`
+            : 'chưa có dữ liệu';
+    }
 
     const catTotals = {};
     allData.forEach(e => { catTotals[e.cat] = (catTotals[e.cat] || 0) + Number(e.amount); });

@@ -96,8 +96,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="api\auth.js" />
     <Content Include="api\expenses.js" />
     <Content Include="index.html" />
+    <Content Include="login.html" />
     <Content Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
